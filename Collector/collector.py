@@ -4,17 +4,19 @@
 __author__      = "Isidor Nygren"
 __copyright__   = "Copyright 2018, Isidor Nygren"
 __license__     = "MIT"
-__version__     = "1.0"
+__version__     = "1.1"
 
 from lxml import html
 from datetime import date
 from datetime import timedelta
 from datetime import datetime
 from pathlib import Path
+from multiprocessing.dummy import Pool as ThreadPool
 import sys, getopt
 import requests
 import re
 import csv
+import itertools
 
 class Collector:
     star_signs = {'aries': 1,'taurus': 2, 'hemini': 3,'cancer': 4,'leo': 5,'virgo': 6,'libra': 7,'scorpio': 8,'sagittarius': 9,'capricorn': 10,'aquarius': 11,'pisces': 12}
@@ -33,21 +35,31 @@ class Collector:
         end_date : date
             the end date where to fetch horoscopes from
         """
-        db_date = datetime.now().strftime("%Y-%m-%d")
+        starting_time = datetime.now()
+        db_date = starting_time.strftime("%Y-%m-%d")
         days = (end_date - start_date).days + 1
         Collector.__print("Executing collector")
+
         for day in range(0,days):
             date = start_date + timedelta(days=day)
             Collector.__print("Running for date: " + date.strftime("%Y-%m-%d"))
-            for sign in range(1,13):
-                try:
-                    Collector.__print("Running for sign: " + str(sign))
-                    horoscope = Collector.__get_horoscope(date, sign)
-                    Collector.__append_to_csv(horoscope, Collector.database_name + "-" + db_date + ".csv")
-                except FileNotFoundError as e:
-                    print(e)
-                    # This break assumes if no the first sign does not exist, no other sign exists
-                    break
+            pool = ThreadPool(12)
+            results = pool.starmap(Collector.get_horoscope_thread, zip(itertools.repeat(date), [1,2,3,4,5,6,7,8,9,10,11,12]))
+
+            pool.close()
+            pool.join()
+
+            for result in results:
+                Collector.__append_to_csv(result, Collector.database_name + "-" + db_date + ".csv")
+
+        Collector.__print("Finished " + str(results.__len__()) + " horoscopes in " + str(datetime.now() - starting_time))
+
+    @staticmethod
+    def get_horoscope_thread(date, sign):
+        try:
+            return Collector.__get_horoscope(date, sign)
+        except FileNotFoundError as e:
+            print(e)
 
     @staticmethod
     def __print(string):
@@ -68,11 +80,11 @@ class Collector:
         """
         filexists = Path(filename).is_file()
         with open(filename, 'a') as csvfile:
-            fieldnames = ['horoscope', 'sign', 'date']
+            fieldnames = ['horoscope', 'sign', 'month', 'day']
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             if not filexists:
                 writer.writeheader()
-            writer.writerow({'horoscope':horoscope['horoscope'], 'sign':horoscope['sign'] , 'date':horoscope['date'].strftime("%Y-%m-%d")})
+            writer.writerow({'horoscope':horoscope['horoscope'], 'sign':horoscope['sign'] , 'month':horoscope['date'].strftime("%m"), 'day':horoscope['date'].strftime("%d")})
 
     @staticmethod
     def __get_horoscope(date, sign):
@@ -116,8 +128,8 @@ class Collector:
         return {'date': date, 'horoscope': horoscope_text, 'sign': sign_n}
 
 def main(argv):
-    startdate   = "2018-01-01"
-    enddate     = "2018-01-10"
+    startdate   = "2017-02-21"
+    enddate     = datetime.now().strftime("%Y-%m-%d")
     try:
         opts, args = getopt.getopt(argv, "hs:e:",["startdate=", "enddate="])
     except getopt.GetoptError:
