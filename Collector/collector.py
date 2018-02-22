@@ -40,6 +40,8 @@ class Collector:
         days = (end_date - start_date).days + 1
         Collector.__print("Executing collector")
 
+        tot_horoscopes = 0
+
         for day in range(0,days):
             date = start_date + timedelta(days=day)
             Collector.__print("Running for date: " + date.strftime("%Y-%m-%d"))
@@ -49,10 +51,11 @@ class Collector:
             pool.close()
             pool.join()
 
+            tot_horoscopes += results.__len__()
             for result in results:
                 Collector.__append_to_csv(result, Collector.database_name + "-" + db_date + ".csv")
 
-        Collector.__print("Finished " + str(results.__len__()) + " horoscopes in " + str(datetime.now() - starting_time))
+        Collector.__print("Finished " + str(tot_horoscopes) + " horoscopes in " + str(datetime.now() - starting_time))
 
     @staticmethod
     def get_horoscope_thread(date, sign):
@@ -122,8 +125,6 @@ class Collector:
         # If the date did not exist on the website
         date_compare = date.strftime("%b %#d, %Y")
         if horoscope_date != date_compare:
-            print('"' + horoscope_date + '"')
-            print('"' + date_compare + '"')
             raise FileNotFoundError('No horoscope from {} found.'.format(date_compare))
         return {'date': date, 'horoscope': horoscope_text, 'sign': sign_n}
 
