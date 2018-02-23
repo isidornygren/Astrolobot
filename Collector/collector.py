@@ -17,13 +17,17 @@ import requests
 import re
 import csv
 import itertools
+import os
+import random
 
 class Collector:
     star_signs = {'aries': 1,'taurus': 2, 'hemini': 3,'cancer': 4,'leo': 5,'virgo': 6,'libra': 7,'scorpio': 8,'sagittarius': 9,'capricorn': 10,'aquarius': 11,'pisces': 12}
     database_name = "database"
+    # Formatting for day in date formatting for different os's
+    day_single = '%#d' if os.name == 'windows' else '%-d'
 
     @staticmethod
-    def run(start_date, end_date):
+    def run(start_date, end_date, test_perc):
         """
         Parses horoscopes from start_date until end_date for all signs and outputs
         them into a database-YYYY-mm-dd.csv file
@@ -32,8 +36,10 @@ class Collector:
         ----------
         start_date : date
             starting date to fetch horoscopes from
-        end_date : date
+        end_date  : date
             the end date where to fetch horoscopes from
+        test_perc : int
+            the percentage of the data to turn into a separate test database (0-100)
         """
         starting_time = datetime.now()
         db_date = starting_time.strftime("%Y-%m-%d")
@@ -52,8 +58,14 @@ class Collector:
             pool.join()
 
             tot_horoscopes += results.__len__()
+            print("Results length: " + str(results.__len__()))
             for result in results:
-                Collector.__append_to_csv(result, Collector.database_name + "-" + db_date + ".csv")
+                if result is not None:
+                    rand_int = random.randint(1,100)
+                    if rand_int > int(test_perc):
+                        Collector.__append_to_csv(result, Collector.database_name + "-" + db_date + ".csv")
+                    else:
+                        Collector.__append_to_csv(result, Collector.database_name + "-" + db_date + "_test" + ".csv")
 
         Collector.__print("Finished " + str(tot_horoscopes) + " horoscopes in " + str(datetime.now() - starting_time))
 
@@ -123,7 +135,7 @@ class Collector:
         horoscope_date = horoscope_date.replace('[\'', '').replace('\']', '')
 
         # If the date did not exist on the website
-        date_compare = date.strftime("%b %#d, %Y")
+        date_compare = date.strftime("%b " + Collector.day_single + ", %Y")
         if horoscope_date != date_compare:
             raise FileNotFoundError('No horoscope from {} found.'.format(date_compare))
         return {'date': date, 'horoscope': horoscope_text, 'sign': sign_n}
@@ -131,20 +143,24 @@ class Collector:
 def main(argv):
     startdate   = "2017-02-21"
     enddate     = datetime.now().strftime("%Y-%m-%d")
+    testperc   = 0
+    random.seed()
     try:
-        opts, args = getopt.getopt(argv, "hs:e:",["startdate=", "enddate="])
+        opts, args = getopt.getopt(argv, "ht:s:e:",["testperc=", "startdate=", "enddate="])
     except getopt.GetoptError:
-        print('collector.py -s YYYY-MM-DD -e YYYY-MM-DD')
+        print('collector.py -t 10 -s YYYY-MM-DD -e YYYY-MM-DD')
         sys.exit(2)
     for opt, arg in opts:
         if opt == '-h':
-            print('collector.py -s YYYY-MM-DD -e YYYY-MM-DD')
+            print('collector.py -t 10 -s YYYY-MM-DD -e YYYY-MM-DD')
             sys.exit()
         elif opt == '-s':
             startdate = arg
         elif opt == '-e':
             enddate = arg
-    Collector.run(datetime.strptime(startdate, '%Y-%m-%d').date(), datetime.strptime(enddate, '%Y-%m-%d').date())
+        elif opt == '-t':
+            testperc = arg
+    Collector.run(datetime.strptime(startdate, '%Y-%m-%d').date(), datetime.strptime(enddate, '%Y-%m-%d').date(), testperc)
 
 if __name__ == "__main__":
     main(sys.argv[1:])
