@@ -12,7 +12,7 @@ from datetime import timedelta
 from datetime import datetime
 from pathlib import Path
 from multiprocessing.dummy import Pool as ThreadPool
-import sys, getopt
+import argparse
 import requests
 import re
 import csv
@@ -22,15 +22,15 @@ import random
 
 class Collector:
     star_signs = {'aries': 1,'taurus': 2, 'hemini': 3,'cancer': 4,'leo': 5,'virgo': 6,'libra': 7,'scorpio': 8,'sagittarius': 9,'capricorn': 10,'aquarius': 11,'pisces': 12}
-    database_name = "database"
+    database_name = "horoscopes_db"
     # Formatting for day in date formatting for different os's
-    day_single = '%#d' if os.name == 'windows' else '%-d'
+    day_single = '%#d' if os.name == 'Windows' else '%-d'
 
     @staticmethod
     def run(start_date, end_date, test_perc):
         """
         Parses horoscopes from start_date until end_date for all signs and outputs
-        them into a database-YYYY-mm-dd.csv file
+        them into a database_name-YYYY-mm-dd.csv file
 
         Parameters
         ----------
@@ -140,27 +140,10 @@ class Collector:
             raise FileNotFoundError('No horoscope from {} found.'.format(date_compare))
         return {'date': date, 'horoscope': horoscope_text, 'sign': sign_n}
 
-def main(argv):
-    startdate   = "2017-02-21"
-    enddate     = datetime.now().strftime("%Y-%m-%d")
-    testperc   = 0
-    random.seed()
-    try:
-        opts, args = getopt.getopt(argv, "ht:s:e:",["testperc=", "startdate=", "enddate="])
-    except getopt.GetoptError:
-        print('collector.py -t 10 -s YYYY-MM-DD -e YYYY-MM-DD')
-        sys.exit(2)
-    for opt, arg in opts:
-        if opt == '-h':
-            print('collector.py -t 10 -s YYYY-MM-DD -e YYYY-MM-DD')
-            sys.exit()
-        elif opt == '-s':
-            startdate = arg
-        elif opt == '-e':
-            enddate = arg
-        elif opt == '-t':
-            testperc = arg
-    Collector.run(datetime.strptime(startdate, '%Y-%m-%d').date(), datetime.strptime(enddate, '%Y-%m-%d').date(), testperc)
+parser = argparse.ArgumentParser(description='Fetches and parses data from horoscopes.com.')
+parser.add_argument('-s', '--startdate', default="2017-02-21", help='The first date to fetch horoscopes from (default: 2017-02-21)')
+parser.add_argument('-e', '--enddate', default=datetime.now().strftime("%Y-%m-%d"), help='The last date to fetch horoscopes from (default:today)')
+parser.add_argument('-t', '--testperc', default=0, type=int, help='The percentage of the results to add to the a test database (0-100) (default:0)')
 
-if __name__ == "__main__":
-    main(sys.argv[1:])
+args = parser.parse_args()
+Collector.run(datetime.strptime(args.startdate, '%Y-%m-%d').date(), datetime.strptime(args.enddate, '%Y-%m-%d').date(), args.testperc)
