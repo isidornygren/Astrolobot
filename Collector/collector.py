@@ -169,20 +169,16 @@ class Collector:
         tree = html.fromstring(response.content)
 
         # Extract elements from html
-        horoscope_text = str(
-            tree.xpath("//div[contains(@class, 'horoscope-content')]/p/text()")
+        horoscope_text = "".join(
+            tree.xpath("//div[contains(@class, 'main-horoscope')]/p/text()")
         )
-        horoscope_date = str(
-            tree.xpath("//div[contains(@class, 'horoscope-content')]/p/b/text()")
+        horoscope_date = "".join(
+            tree.xpath("//div[contains(@class, 'main-horoscope')]/p/strong/text()")
         )
 
         # Remove artifacts from text
-        horoscope_text = (
-            horoscope_text.replace("['\\n', \" - ", "")
-            .replace('\\n"]', "")
-            .replace('\\n", "Who\'s in your future? ", "Who\'s in your future? "]', "")
-        )
-        horoscope_date = horoscope_date.replace("['", "").replace("']", "")
+        if horoscope_text.startswith(" - "):
+            horoscope_text = horoscope_text[3:]
 
         # If the date did not exist on the website
         date_compare = date.strftime("%b " + Collector.day_single + ", %Y")
