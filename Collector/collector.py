@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """ collector.py: Fetches and parses data from horoscope databases """
 
-__author__ = "Isidor Nygren"
+__author__ = "Isidor Nygren, Gustaf Wennerström"
 __copyright__ = "Copyright 2018, Isidor Nygren"
 __license__ = "MIT"
 __version__ = "1.1"
