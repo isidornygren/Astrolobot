@@ -8,3 +8,5 @@ This project uses Python 3.6.* and TensorFlow
 
 ## Linting
 Astrolobot uses Black for linting, if it's not already installed, run `pip install black` to install it.
+
+Before merging with master, make sure your code is correctly formatted according to black, you can automate this by running `black .` in the directory you added code to.
