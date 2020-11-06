@@ -66,17 +66,23 @@ class Collector:
         for day in range(0, days):
             date = start_date + timedelta(days=day)
             Collector.__print("Running for date: " + date.strftime("%Y-%m-%d"))
+
+            moon_phase = moon.phase(datetime(date.year, date.month, date.day))
+
             pool = ThreadPool(12)
             results = pool.starmap(
                 Collector.get_horoscope_thread,
-                zip(itertools.repeat(date), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]),
+                zip(
+                    itertools.repeat(date),
+                    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+                    itertools.repeat(moon_phase),
+                ),
             )
 
             pool.close()
             pool.join()
 
             tot_horoscopes += results.__len__()
-            print("Results length: " + str(results.__len__()))
             for result in results:
                 if result is not None:
                     rand_int = random.randint(1, 100)
@@ -98,9 +104,9 @@ class Collector:
         )
 
     @staticmethod
-    def get_horoscope_thread(date, sign):
+    def get_horoscope_thread(date, sign, moon_phase):
         try:
-            return Collector.__get_horoscope(date, sign)
+            return Collector.__get_horoscope(date, sign, moon_phase)
         except FileNotFoundError as e:
             print(e)
 
@@ -117,14 +123,27 @@ class Collector:
         Parameters
         ----------
         horoscope : table
-            horoscope object containing a str (horoscope), date (date) and integer (sign)
+            horoscope object containing a str (horoscope), date (date), integer (sign), float (moon_phase), float (moon_illuminated), float (moon_age), float (moon_distance), float (moon_angular_diameter), float (sun_distance) and float (sun_angular_diameter)
         filename : str
             name of the database to add to horoscope to
         """
         filexists = Path(filename).is_file()
         with open(filename, "a") as csvfile:
-            fieldnames = ["horoscope", "sign", "month", "day"]
+            fieldnames = [
+                "horoscope",
+                "sign",
+                "month",
+                "day",
+                "moon_phase",
+                "moon_illuminated",
+                "moon_age",
+                "moon_distance",
+                "moon_angular_diameter",
+                "sun_distance",
+                "sun_angular_diameter",
+            ]
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
             if not filexists:
                 writer.writeheader()
             writer.writerow(
@@ -133,11 +152,17 @@ class Collector:
                     "sign": horoscope["sign"],
                     "month": horoscope["date"].strftime("%m"),
                     "day": horoscope["date"].strftime("%d"),
+                    "moon_phase": horoscope["moon"]["phase"],
+                    "moon_illuminated": horoscope["moon"]["age"],
+                    "moon_distance": horoscope["moon"]["distance"],
+                    "moon_angular_diameter": horoscope["moon"]["angular_diameter"],
+                    "sun_distance": horoscope["moon"]["sun_distance"],
+                    "sun_angular_diameter": horoscope["moon"]["sun_angular_diameter"],
                 }
             )
 
     @staticmethod
-    def __get_horoscope(date, sign):
+    def __get_horoscope(date, sign, moon_phase):
         """
         Fetches and parses a horoscope from horoscope.com
 
@@ -188,7 +213,7 @@ class Collector:
             "date": date,
             "horoscope": horoscope_text,
             "sign": sign_n,
-            moon: moon.phase(date),
+            "moon": moon_phase,
         }
 
 
