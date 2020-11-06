@@ -25,3 +25,4 @@ jobs:
       # Runs a single command using the runners shell
       - name: Black Code Formatter
         uses: lgeiger/black-action@v1.0.1
+        args: ". --check"
