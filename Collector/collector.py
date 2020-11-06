@@ -19,6 +19,7 @@ import csv
 import itertools
 import os
 import random
+import moon
 
 class Collector:
     star_signs = {'aries': 1,'taurus': 2, 'hemini': 3,'cancer': 4,'leo': 5,'virgo': 6,'libra': 7,'scorpio': 8,'sagittarius': 9,'capricorn': 10,'aquarius': 11,'pisces': 12}
@@ -138,7 +139,7 @@ class Collector:
         date_compare = date.strftime("%b " + Collector.day_single + ", %Y")
         if horoscope_date != date_compare:
             raise FileNotFoundError('No horoscope from {} found.'.format(date_compare))
-        return {'date': date, 'horoscope': horoscope_text, 'sign': sign_n}
+        return {'date': date, 'horoscope': horoscope_text, 'sign': sign_n, moon: moon.phase(date)}
 
 parser = argparse.ArgumentParser(description='Fetches and parses data from horoscopes.com.')
 parser.add_argument('-s', '--startdate', default="2017-02-21", help='The first date to fetch horoscopes from (default: 2017-02-21)')
